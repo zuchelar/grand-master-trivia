@@ -6,16 +6,20 @@ import {
 	type OpenTriviaAnswerLetter,
 	prepareOpenTriviaAnswerChoices,
 } from '@/lib/openTriviaAnswers';
+import { scoreQuestion } from '@/lib/quizScoring';
 import QuizActiveScreen, { type QuizAnswerFeedback } from '@/routes/quiz_active';
+import ResultsScreen from '@/routes/results_screen';
 import StartScreen from '@/routes/start_screen';
 import {
 	GAME_STAGES,
+	type GameStage,
 	QUIZ_FEEDBACK_CORRECT_MS,
 	QUIZ_FEEDBACK_WRONG_MS,
 	QUIZ_QUESTION_COUNT,
-	type GameStage,
+	QUIZ_SECONDS_PER_QUESTION,
 } from '@/types/game';
 import type { OpenTriviaCategory, OpenTriviaDifficulty } from '@/types/open-trivia';
+import type { QuizQuestionStat } from '@/types/quiz-session';
 
 function clearStoredTimeout(ref: { current: ReturnType<typeof setTimeout> | null }) {
 	if (ref.current !== null) {
@@ -33,15 +37,21 @@ function App() {
 	const [selectedLetter, setSelectedLetter] = useState<OpenTriviaAnswerLetter | null>(null);
 	const [answerFeedback, setAnswerFeedback] = useState<QuizAnswerFeedback>('idle');
 	const [wrongHighlightLetter, setWrongHighlightLetter] = useState<OpenTriviaAnswerLetter | null>(null);
+	const [roundStats, setRoundStats] = useState<QuizQuestionStat[]>([]);
+	const [maxStreakThisRun, setMaxStreakThisRun] = useState(0);
 
 	const resolvingRef = useRef(false);
 	const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const questionStartedAtRef = useRef(Date.now());
+	const pendingElapsedMsRef = useRef(0);
 
 	useEffect(() => {
 		return () => clearStoredTimeout(advanceTimeoutRef);
 	}, []);
 
 	const interactionLocked = answerFeedback !== 'idle';
+
+	const questionTimeCapMs = QUIZ_SECONDS_PER_QUESTION * 1000;
 
 	const quizQueryEnabled =
 		gameStage === GAME_STAGES.QUIZ_ACTIVE && selectedCategoryId !== null && selectedDifficulty !== null;
@@ -60,6 +70,14 @@ function App() {
 
 	const currentQuestion = questions[currentQuestionIndex] ?? null;
 
+	useEffect(() => {
+		if (gameStage !== GAME_STAGES.QUIZ_ACTIVE || !quizReady || !currentQuestion) {
+			return;
+		}
+
+		questionStartedAtRef.current = Date.now();
+	}, [gameStage, quizReady, currentQuestion]);
+
 	const answerChoices = useMemo(
 		() => (currentQuestion ? prepareOpenTriviaAnswerChoices(currentQuestion) : []),
 		[currentQuestion],
@@ -68,8 +86,24 @@ function App() {
 	const questionText = currentQuestion ? decodeOpenTriviaText(currentQuestion.question) : '';
 
 	const advanceQuestion = useCallback(
-		(wasCorrect: boolean) => {
-			setStreak((s) => (wasCorrect ? s + 1 : 0));
+		(wasCorrect: boolean, elapsedMs: number) => {
+			const { total, base, timeBonus } = scoreQuestion(wasCorrect, elapsedMs);
+			setRoundStats((prev) => [
+				...prev,
+				{
+					correct: wasCorrect,
+					elapsedMs,
+					points: total,
+					basePoints: base,
+					timeBonus,
+				},
+			]);
+
+			setStreak((s) => {
+				const next = wasCorrect ? s + 1 : 0;
+				setMaxStreakThisRun((m) => Math.max(m, next));
+				return next;
+			});
 			setSelectedLetter(null);
 
 			const next = currentQuestionIndex + 1;
@@ -91,7 +125,7 @@ function App() {
 				resolvingRef.current = false;
 				setAnswerFeedback('idle');
 				setWrongHighlightLetter(null);
-				advanceQuestion(wasCorrect);
+				advanceQuestion(wasCorrect, pendingElapsedMsRef.current);
 			}, delay);
 		},
 		[advanceQuestion],
@@ -101,6 +135,8 @@ function App() {
 		if (resolvingRef.current || interactionLocked || selectedLetter === null || !currentQuestion) {
 			return;
 		}
+
+		pendingElapsedMsRef.current = Math.min(Math.max(0, Date.now() - questionStartedAtRef.current), questionTimeCapMs);
 
 		const chosen = answerChoices.find((c) => c.letter === selectedLetter);
 		const correctText = decodeOpenTriviaText(currentQuestion.correct_answer);
@@ -123,6 +159,8 @@ function App() {
 			return;
 		}
 
+		pendingElapsedMsRef.current = Math.min(Math.max(0, Date.now() - questionStartedAtRef.current), questionTimeCapMs);
+
 		resolvingRef.current = true;
 		setAnswerFeedback('incorrect');
 		setWrongHighlightLetter(null);
@@ -134,6 +172,8 @@ function App() {
 		resolvingRef.current = false;
 		setAnswerFeedback('idle');
 		setWrongHighlightLetter(null);
+		setRoundStats([]);
+		setMaxStreakThisRun(0);
 		setCurrentQuestionIndex(0);
 		setStreak(0);
 		setSelectedLetter(null);
@@ -145,6 +185,8 @@ function App() {
 		resolvingRef.current = false;
 		setAnswerFeedback('idle');
 		setWrongHighlightLetter(null);
+		setRoundStats([]);
+		setMaxStreakThisRun(0);
 		setGameStage(GAME_STAGES.START_SCREEN);
 		setCurrentQuestionIndex(0);
 		setStreak(0);
@@ -185,18 +227,8 @@ function App() {
 			)}
 
 			{gameStage === GAME_STAGES.RESULTS_SCREEN && (
-				<div className='mx-auto flex w-full max-w-lg flex-col items-center gap-8 py-16 text-center'>
-					<h2 className='font-heading text-3xl font-bold text-white'>Quiz complete</h2>
-					<p className='text-lg text-white/80'>
-						You ended with a streak of <span className='font-bold text-brand-green'>{streak}</span>.
-					</p>
-					<button
-						type='button'
-						onClick={handlePlayAgain}
-						className='w-full max-w-sm rounded-2xl bg-[#7c4dff] py-4 text-sm font-bold uppercase tracking-[0.12em] text-white shadow-[0_0_28px_rgba(124,77,255,0.45)] transition-[filter] hover:brightness-110'
-					>
-						Play again
-					</button>
+				<div className='min-h-dvh bg-[#0D0D1A] px-4 py-4'>
+					<ResultsScreen stats={roundStats} maxStreakThisRun={maxStreakThisRun} onPlayAgain={handlePlayAgain} />
 				</div>
 			)}
 		</div>
