@@ -5,6 +5,7 @@ interface OpenTriviaQuestionsParams {
 	category_id: OpenTriviaCategory['id'];
 	difficulty: OpenTriviaDifficulty;
 	amount?: number;
+	enabled?: boolean;
 }
 
 interface OpenTriviaQuestionsResult {
@@ -12,7 +13,12 @@ interface OpenTriviaQuestionsResult {
 	results: OpenTriviaQuestion[];
 }
 
-const useOpenTriviaQuestions = ({ category_id, difficulty, amount = 10 }: OpenTriviaQuestionsParams) => {
+const useOpenTriviaQuestions = ({
+	category_id,
+	difficulty,
+	amount = 10,
+	enabled = true,
+}: OpenTriviaQuestionsParams) => {
 	return useQuery<OpenTriviaQuestionsResult>({
 		queryKey: ['open-trivia-questions', category_id, difficulty, amount],
 		queryFn: async () => {
@@ -22,6 +28,7 @@ const useOpenTriviaQuestions = ({ category_id, difficulty, amount = 10 }: OpenTr
 			const data = await response.json();
 			return data;
 		},
+		enabled,
 	});
 };
 
