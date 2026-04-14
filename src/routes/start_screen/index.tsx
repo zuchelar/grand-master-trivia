@@ -1,6 +1,8 @@
+import type { LeaderboardAttempt } from '@/types/leaderboard';
 import type { OpenTriviaCategory, OpenTriviaDifficulty } from '@/types/open-trivia';
 import CategoryCard from './_components/CategoryCard';
 import DifficultyCard from './_components/DifficultyCard';
+import HofLeaderboard from './_components/HofLeaderboard';
 import TopCard from './_components/TopCard';
 
 interface StartScreenProps {
@@ -9,6 +11,7 @@ interface StartScreenProps {
 	selectedDifficulty: OpenTriviaDifficulty | null;
 	setSelectedDifficulty: React.Dispatch<React.SetStateAction<OpenTriviaDifficulty | null>>;
 	onStartQuiz: () => void;
+	leaderboardAttempts: LeaderboardAttempt[];
 }
 
 const StartScreen = ({
@@ -17,6 +20,7 @@ const StartScreen = ({
 	selectedDifficulty,
 	setSelectedDifficulty,
 	onStartQuiz,
+	leaderboardAttempts,
 }: StartScreenProps) => {
 	const canStart = selectedCategoryId !== null && selectedDifficulty !== null;
 
@@ -29,10 +33,18 @@ const StartScreen = ({
 				type='button'
 				disabled={!canStart}
 				onClick={onStartQuiz}
-				className='mt-2 w-full rounded-2xl bg-[#7c4dff] py-4 text-sm font-bold uppercase tracking-[0.12em] text-white shadow-[0_0_28px_rgba(124,77,255,0.45)] transition-[filter,opacity] hover:brightness-110 disabled:pointer-events-none disabled:opacity-35 disabled:shadow-none'
+				className='w-full rounded-2xl bg-[#7c4dff] py-4 text-sm font-bold uppercase tracking-[0.12em] text-white shadow-[0_0_28px_rgba(124,77,255,0.45)] transition-[filter,opacity] hover:brightness-110 disabled:pointer-events-none disabled:opacity-35 disabled:shadow-none'
 			>
 				Begin quiz
 			</button>
+
+			<div
+				className='h-px w-full shrink-0 bg-linear-to-r from-transparent via-white/20 to-transparent'
+				role='separator'
+				aria-orientation='horizontal'
+			/>
+
+			<HofLeaderboard attempts={leaderboardAttempts} />
 		</div>
 	);
 };
