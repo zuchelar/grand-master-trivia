@@ -2,8 +2,6 @@ import { type ComponentPropsWithoutRef } from 'react';
 import { type OpenTriviaAnswerLetter } from '@/lib/openTriviaAnswers';
 import { cn } from '@/lib/utils';
 
-export type { OpenTriviaAnswerLetter };
-
 interface AnswerProps extends Omit<ComponentPropsWithoutRef<'button'>, 'children'> {
 	letter: OpenTriviaAnswerLetter;
 	children: string;

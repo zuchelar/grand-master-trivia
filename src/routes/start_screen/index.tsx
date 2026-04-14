@@ -25,26 +25,38 @@ const StartScreen = ({
 	const canStart = selectedCategoryId !== null && selectedDifficulty !== null;
 
 	return (
-		<div className='mx-auto flex w-full max-w-2xl flex-col gap-4'>
-			<TopCard />
-			<CategoryCard value={selectedCategoryId} onValueChange={setSelectedCategoryId} />
-			<DifficultyCard value={selectedDifficulty} onValueChange={setSelectedDifficulty} />
-			<button
-				type='button'
-				disabled={!canStart}
-				onClick={onStartQuiz}
-				className='w-full rounded-2xl bg-[#7c4dff] py-4 text-sm font-bold uppercase tracking-[0.12em] text-white shadow-[0_0_28px_rgba(124,77,255,0.45)] transition-[filter,opacity] hover:brightness-110 disabled:pointer-events-none disabled:opacity-35 disabled:shadow-none'
-			>
-				Begin quiz
-			</button>
+		<div className='mx-auto w-full max-w-2xl lg:max-w-5xl'>
+			{/*
+			 * Mobile  → single flex-col column, everything stacked.
+			 * Desktop → two-column grid: settings left, leaderboard right (sticky).
+			 */}
+			<div className='flex flex-col gap-4 lg:grid lg:grid-cols-[1fr_360px] lg:items-start lg:gap-8'>
+				{/* ── Left / main column ── */}
+				<div className='flex flex-col gap-4'>
+					<TopCard />
+					<CategoryCard value={selectedCategoryId} onValueChange={setSelectedCategoryId} />
+					<DifficultyCard value={selectedDifficulty} onValueChange={setSelectedDifficulty} />
+					<button
+						type='button'
+						disabled={!canStart}
+						onClick={onStartQuiz}
+						className='w-full rounded-2xl bg-[#7c4dff] py-4 text-sm font-bold uppercase tracking-[0.12em] text-white shadow-[0_0_28px_rgba(124,77,255,0.45)] transition-[filter,opacity] hover:brightness-110 disabled:pointer-events-none disabled:opacity-35 disabled:shadow-none'
+					>
+						Begin quiz
+					</button>
+				</div>
 
-			<div
-				className='h-px w-full shrink-0 bg-linear-to-r from-transparent via-white/20 to-transparent'
-				role='separator'
-				aria-orientation='horizontal'
-			/>
-
-			<HofLeaderboard attempts={leaderboardAttempts} />
+				{/* ── Right column ── */}
+				<div className='flex flex-col gap-4 lg:sticky lg:top-6'>
+					{/* Separator only visible on mobile, where the leaderboard sits below the button */}
+					<div
+						className='h-px w-full shrink-0 bg-linear-to-r from-transparent via-white/20 to-transparent lg:hidden'
+						role='separator'
+						aria-orientation='horizontal'
+					/>
+					<HofLeaderboard attempts={leaderboardAttempts} />
+				</div>
+			</div>
 		</div>
 	);
 };

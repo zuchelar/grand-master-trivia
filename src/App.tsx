@@ -26,6 +26,8 @@ import type { QuizQuestionStat } from '@/types/quiz-session';
 
 const HOF_LEADERBOARD_STORAGE_KEY = 'grand-master-trivia-hof-v1';
 
+const QUESTION_TIME_CAP_MS = QUIZ_SECONDS_PER_QUESTION * 1000;
+
 function buildRunSignature(stats: QuizQuestionStat[]): string {
 	return stats.map((s) => `${s.correct ? '1' : '0'}:${s.points}:${s.elapsedMs}`).join('|');
 }
@@ -65,8 +67,6 @@ function App() {
 
 	const interactionLocked = answerFeedback !== 'idle';
 
-	const questionTimeCapMs = QUIZ_SECONDS_PER_QUESTION * 1000;
-
 	const quizQueryEnabled =
 		gameStage === GAME_STAGES.QUIZ_ACTIVE && selectedCategoryId !== null && selectedDifficulty !== null;
 
@@ -97,7 +97,10 @@ function App() {
 		[currentQuestion],
 	);
 
-	const questionText = currentQuestion ? decodeOpenTriviaText(currentQuestion.question) : '';
+	const questionText = useMemo(
+		() => (currentQuestion ? decodeOpenTriviaText(currentQuestion.question) : ''),
+		[currentQuestion],
+	);
 
 	const resultsRecordedRef = useRef(false);
 
@@ -182,12 +185,15 @@ function App() {
 		[advanceQuestion],
 	);
 
-	const handleLockIn = () => {
+	const handleLockIn = useCallback(() => {
 		if (resolvingRef.current || interactionLocked || selectedLetter === null || !currentQuestion) {
 			return;
 		}
 
-		pendingElapsedMsRef.current = Math.min(Math.max(0, Date.now() - questionStartedAtRef.current), questionTimeCapMs);
+		pendingElapsedMsRef.current = Math.min(
+			Math.max(0, Date.now() - questionStartedAtRef.current),
+			QUESTION_TIME_CAP_MS,
+		);
 
 		const chosen = answerChoices.find((c) => c.letter === selectedLetter);
 		const correctText = decodeOpenTriviaText(currentQuestion.correct_answer);
@@ -203,22 +209,25 @@ function App() {
 			setWrongHighlightLetter(selectedLetter);
 			scheduleAdvanceAfterFeedback(false);
 		}
-	};
+	}, [interactionLocked, selectedLetter, currentQuestion, answerChoices, scheduleAdvanceAfterFeedback]);
 
-	const handleTimeUp = () => {
+	const handleTimeUp = useCallback(() => {
 		if (resolvingRef.current || interactionLocked) {
 			return;
 		}
 
-		pendingElapsedMsRef.current = Math.min(Math.max(0, Date.now() - questionStartedAtRef.current), questionTimeCapMs);
+		pendingElapsedMsRef.current = Math.min(
+			Math.max(0, Date.now() - questionStartedAtRef.current),
+			QUESTION_TIME_CAP_MS,
+		);
 
 		resolvingRef.current = true;
 		setAnswerFeedback('incorrect');
 		setWrongHighlightLetter(null);
 		scheduleAdvanceAfterFeedback(false);
-	};
+	}, [interactionLocked, scheduleAdvanceAfterFeedback]);
 
-	const handleStartQuiz = () => {
+	const handleStartQuiz = useCallback(() => {
 		clearStoredTimeout(advanceTimeoutRef);
 		resolvingRef.current = false;
 		setAnswerFeedback('idle');
@@ -229,9 +238,9 @@ function App() {
 		setStreak(0);
 		setSelectedLetter(null);
 		setGameStage(GAME_STAGES.QUIZ_ACTIVE);
-	};
+	}, []);
 
-	const handlePlayAgain = () => {
+	const handlePlayAgain = useCallback(() => {
 		clearStoredTimeout(advanceTimeoutRef);
 		resolvingRef.current = false;
 		setAnswerFeedback('idle');
@@ -242,10 +251,10 @@ function App() {
 		setCurrentQuestionIndex(0);
 		setStreak(0);
 		setSelectedLetter(null);
-	};
+	}, []);
 
 	return (
-		<div className='min-h-dvh bg-[#0B0E1B] px-4 py-4'>
+		<div className='min-h-dvh bg-[#0B0E1B] px-4 py-4 md:px-6 lg:px-8'>
 			{gameStage === GAME_STAGES.START_SCREEN && (
 				<StartScreen
 					selectedCategoryId={selectedCategoryId}
@@ -279,9 +288,7 @@ function App() {
 			)}
 
 			{gameStage === GAME_STAGES.RESULTS_SCREEN && (
-				<div className='min-h-dvh bg-[#0D0D1A] px-4 py-4'>
-					<ResultsScreen stats={roundStats} maxStreakThisRun={maxStreakThisRun} onPlayAgain={handlePlayAgain} />
-				</div>
+				<ResultsScreen stats={roundStats} maxStreakThisRun={maxStreakThisRun} onPlayAgain={handlePlayAgain} />
 			)}
 		</div>
 	);

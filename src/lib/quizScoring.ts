@@ -2,8 +2,8 @@ import { QUIZ_SECONDS_PER_QUESTION } from '@/types/game';
 
 const QUESTION_TIME_MS = QUIZ_SECONDS_PER_QUESTION * 1000;
 
-export const QUIZ_SCORE_BASE = 800;
-export const QUIZ_SCORE_MAX_TIME_BONUS = 400;
+const QUIZ_SCORE_BASE = 800;
+const QUIZ_SCORE_MAX_TIME_BONUS = 400;
 
 export function scoreQuestion(
 	correct: boolean,
