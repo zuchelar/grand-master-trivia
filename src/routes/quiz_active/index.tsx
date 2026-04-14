@@ -84,62 +84,76 @@ const QuizActiveScreen = ({
 	return (
 		<div
 			className={cn(
-				'mx-auto flex w-full max-w-lg flex-col gap-5 rounded-2xl pb-10 pt-1',
+				'mx-auto w-full pb-10 pt-1',
+				'max-w-lg lg:max-w-4xl',
 				answerFeedback === 'correct' && 'quiz-feedback-correct-flash',
 			)}
 		>
-			<header className='flex items-center justify-between gap-2'>
-				<div className='flex items-center gap-2 rounded-full bg-[#141829] px-3.5 py-2 text-xs font-bold text-white/95 ring-1 ring-white/[0.08] sm:text-sm'>
+			{/* Header — always spans full width above both columns */}
+			<header className='mb-5 flex items-center justify-between gap-2'>
+				<div className='flex items-center gap-2 rounded-full bg-[#141829] px-3.5 py-2 text-xs font-bold text-white/95 ring-1 ring-white/8 sm:text-sm'>
 					<FileText className='size-4 shrink-0 text-[#9D7CFF]' aria-hidden />
 					<span className='tabular-nums'>
 						Q {currentIndex + 1} / {totalQuestions}
 					</span>
 				</div>
-				<div className='flex items-center gap-2 rounded-full bg-[#141829] px-3.5 py-2 text-xs font-bold ring-1 ring-white/[0.08] sm:text-sm'>
+				<div className='flex items-center gap-2 rounded-full bg-[#141829] px-3.5 py-2 text-xs font-bold ring-1 ring-white/8 sm:text-sm'>
 					<Zap className='size-4 shrink-0 text-brand-green' aria-hidden />
 					<span className='text-brand-green'>x{streak} STREAK</span>
 				</div>
 			</header>
 
-			<QuizTimer
-				key={currentIndex}
-				timerLimit={QUIZ_SECONDS_PER_QUESTION}
-				onTimeout={onTimeUp}
-				barProgress={quizBarProgress}
-				paused={interactionLocked}
-				className='max-w-none'
-			/>
+			{/*
+			 * Mobile  → flex-col: timer first, then question/answers/button stacked below.
+			 * Desktop → two-column grid: timer pinned left, question + answers + button on right.
+			 */}
+			<div className='flex flex-col gap-5 lg:grid lg:grid-cols-[260px_1fr] lg:items-start lg:gap-10'>
+				{/* ── Left column: countdown timer ── */}
+				<div className='flex flex-col items-center lg:sticky lg:top-8'>
+					<QuizTimer
+						key={currentIndex}
+						timerLimit={QUIZ_SECONDS_PER_QUESTION}
+						onTimeout={onTimeUp}
+						barProgress={quizBarProgress}
+						paused={interactionLocked}
+						className='max-w-none'
+					/>
+				</div>
 
-			<Question question={questionText} />
+				{/* ── Right column: question, answer choices, lock-in ── */}
+				<div className='flex flex-col gap-5'>
+					<Question question={questionText} />
 
-			<div className={cn('flex flex-col gap-3', answerFeedback === 'incorrect' && 'quiz-feedback-shake')}>
-				{answerChoices.map(({ letter, text }) => (
-					<Answer
-						key={`${currentIndex}-${letter}-${text}`}
-						letter={letter}
-						selected={selectedLetter === letter}
-						incorrectHighlight={wrongHighlightLetter === letter}
-						disabled={interactionLocked}
-						onSelect={() => onSelectLetter(letter)}
+					<div className={cn('flex flex-col gap-3', answerFeedback === 'incorrect' && 'quiz-feedback-shake')}>
+						{answerChoices.map(({ letter, text }) => (
+							<Answer
+								key={`${currentIndex}-${letter}-${text}`}
+								letter={letter}
+								selected={selectedLetter === letter}
+								incorrectHighlight={wrongHighlightLetter === letter}
+								disabled={interactionLocked}
+								onSelect={() => onSelectLetter(letter)}
+							>
+								{text}
+							</Answer>
+						))}
+					</div>
+
+					<button
+						type='button'
+						onClick={onLockIn}
+						disabled={selectedLetter === null || interactionLocked}
+						className={cn(
+							'mt-2 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-xs font-bold uppercase tracking-[0.12em] text-white sm:text-sm',
+							'bg-[#7c4dff] shadow-[0_0_28px_rgba(124,77,255,0.5)] transition-[filter,opacity] hover:brightness-110',
+							'disabled:pointer-events-none disabled:opacity-35 disabled:shadow-none',
+						)}
 					>
-						{text}
-					</Answer>
-				))}
+						LOCK IN ANSWER
+						<SendHorizontal className='size-4 shrink-0' aria-hidden />
+					</button>
+				</div>
 			</div>
-
-			<button
-				type='button'
-				onClick={onLockIn}
-				disabled={selectedLetter === null || interactionLocked}
-				className={cn(
-					'mt-2 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-xs font-bold uppercase tracking-[0.12em] text-white sm:text-sm',
-					'bg-[#7c4dff] shadow-[0_0_28px_rgba(124,77,255,0.5)] transition-[filter,opacity] hover:brightness-110',
-					'disabled:pointer-events-none disabled:opacity-35 disabled:shadow-none',
-				)}
-			>
-				LOCK IN ANSWER
-				<SendHorizontal className='size-4 shrink-0' aria-hidden />
-			</button>
 		</div>
 	);
 };

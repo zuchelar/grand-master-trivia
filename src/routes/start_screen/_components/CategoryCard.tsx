@@ -1,5 +1,5 @@
 import { ChevronDown, Shapes } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { getOpenTriviaCategoryIcon } from '@/lib/openTriviaCategoryIcons';
@@ -44,15 +44,17 @@ const CategoryCard = ({
 		onValueChange?.(id);
 	};
 
-	const featuredIdSet = new Set(featuredIds.slice(0, 2));
-	const featured = sortBySourceOrder(OPEN_TRIVIA_CATEGORIES.filter((c) => featuredIdSet.has(c.id)));
-	const rest = sortBySourceOrder(OPEN_TRIVIA_CATEGORIES.filter((c) => !featuredIdSet.has(c.id)));
-
-	const selectedMoreCategory =
-		selectedId !== null && !featuredIdSet.has(selectedId)
-			? (OPEN_TRIVIA_CATEGORIES.find((c) => c.id === selectedId) ?? null)
-			: null;
-	const SummaryIcon = selectedMoreCategory ? getOpenTriviaCategoryIcon(selectedMoreCategory.id) : null;
+	const { featured, rest, selectedMoreCategory, SummaryIcon } = useMemo(() => {
+		const featuredIdSet = new Set(featuredIds.slice(0, 2));
+		const featured = sortBySourceOrder(OPEN_TRIVIA_CATEGORIES.filter((c) => featuredIdSet.has(c.id)));
+		const rest = sortBySourceOrder(OPEN_TRIVIA_CATEGORIES.filter((c) => !featuredIdSet.has(c.id)));
+		const selectedMoreCategory =
+			selectedId !== null && !featuredIdSet.has(selectedId)
+				? (OPEN_TRIVIA_CATEGORIES.find((c) => c.id === selectedId) ?? null)
+				: null;
+		const SummaryIcon = selectedMoreCategory ? getOpenTriviaCategoryIcon(selectedMoreCategory.id) : null;
+		return { featured, rest, selectedMoreCategory, SummaryIcon };
+	}, [featuredIds, selectedId]);
 
 	return (
 		<Card
@@ -143,4 +145,3 @@ const CategoryCard = ({
 };
 
 export default CategoryCard;
-export type { CategoryCardProps };

@@ -71,4 +71,3 @@ const DifficultyCard = ({ value: valueProp, defaultValue = null, onValueChange, 
 };
 
 export default DifficultyCard;
-export type { DifficultyCardProps };

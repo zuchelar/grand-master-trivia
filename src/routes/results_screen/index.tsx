@@ -87,7 +87,8 @@ const ResultsScreen = ({ stats, maxStreakThisRun, onPlayAgain }: ResultsScreenPr
 	};
 
 	return (
-		<div className='mx-auto flex w-full max-w-lg flex-col gap-6 pb-12 pt-4'>
+		<div className='mx-auto flex w-full max-w-lg lg:max-w-3xl flex-col gap-6 pb-12 pt-4'>
+			{/* ── Score hero — centered, full width ── */}
 			<div className='flex flex-col items-center gap-3 text-center'>
 				{showGrandMasterBadge && (
 					<div className='flex items-center justify-center gap-1.5 rounded-full bg-[#1e1a3a] px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-cyan ring-1 ring-brand-cyan/35'>
@@ -102,44 +103,58 @@ const ResultsScreen = ({ stats, maxStreakThisRun, onPlayAgain }: ResultsScreenPr
 				<p className='text-xs font-bold uppercase tracking-[0.25em] text-[#a89bc4]'>Total score</p>
 			</div>
 
-			<div className='relative overflow-hidden rounded-2xl bg-[#1A1A2E] p-5 ring-1 ring-white/[0.06]'>
-				<div
-					className='pointer-events-none absolute -right-8 top-1/2 size-40 -translate-y-1/2 rounded-full border border-white/[0.04] opacity-40'
-					aria-hidden
-				/>
-				<div
-					className='pointer-events-none absolute -right-4 top-1/2 size-24 -translate-y-1/2 rounded-full border border-white/[0.06] opacity-30'
-					aria-hidden
-				/>
-				<p className='text-[10px] font-bold uppercase tracking-[0.18em] text-white/45'>Performance accuracy</p>
-				<p className='mt-2 font-heading text-4xl font-bold text-brand-green'>{summary.accuracyPct}%</p>
-				<div className='mt-4 h-2.5 w-full overflow-hidden rounded-full bg-black/50'>
+			{/*
+			 * Stats section.
+			 * Mobile  → flex-col: accuracy full-width, then speed+streak side-by-side.
+			 * Desktop → two-column grid: accuracy card left, speed+streak stacked right.
+			 */}
+			<div className='flex flex-col gap-4 lg:grid lg:grid-cols-[1fr_220px] lg:items-stretch lg:gap-5'>
+				{/* Accuracy card */}
+				<div className='relative overflow-hidden rounded-2xl bg-[#1A1A2E] p-5 ring-1 ring-white/6'>
 					<div
-						className='h-full rounded-full bg-linear-to-r from-[#7c4dff] to-brand-purple shadow-[0_0_12px_rgba(124,77,255,0.4)] transition-[width] duration-500'
-						style={{ width: `${summary.accuracyPct}%` }}
+						className='pointer-events-none absolute -right-8 top-1/2 size-40 -translate-y-1/2 rounded-full border border-white/4 opacity-40'
+						aria-hidden
 					/>
+					<div
+						className='pointer-events-none absolute -right-4 top-1/2 size-24 -translate-y-1/2 rounded-full border border-white/6 opacity-30'
+						aria-hidden
+					/>
+					<p className='text-[10px] font-bold uppercase tracking-[0.18em] text-white/45'>Performance accuracy</p>
+					<p className='mt-2 font-heading text-4xl font-bold text-brand-green'>{summary.accuracyPct}%</p>
+					<div className='mt-4 h-2.5 w-full overflow-hidden rounded-full bg-black/50'>
+						<div
+							className='h-full rounded-full bg-linear-to-r from-[#7c4dff] to-brand-purple shadow-[0_0_12px_rgba(124,77,255,0.4)] transition-[width] duration-500'
+							style={{ width: `${summary.accuracyPct}%` }}
+						/>
+					</div>
+					<p className='mt-3 text-sm text-white/45'>{topPercentileLabel(summary.accuracyPct)}</p>
 				</div>
-				<p className='mt-3 text-sm text-white/45'>{topPercentileLabel(summary.accuracyPct)}</p>
+
+				{/*
+				 * Speed + Streak cards.
+				 * Mobile  → side-by-side (grid-cols-2).
+				 * Desktop → stacked vertically inside the right grid column.
+				 */}
+				<div className='grid grid-cols-2 gap-3 lg:flex lg:flex-col lg:gap-4'>
+					<div className='flex flex-col items-center rounded-2xl bg-[#1A1A2E] px-4 py-5 text-center ring-1 ring-white/6'>
+						<Zap className='mb-2 size-6 text-brand-cyan' aria-hidden />
+						<p className='text-[10px] font-bold uppercase tracking-[0.15em] text-white/45'>Average speed</p>
+						<p className='mt-1 font-heading text-2xl font-bold text-white tabular-nums'>
+							{summary.avgSpeedSec.toFixed(1)}s
+						</p>
+						<p className='mt-1 text-xs font-semibold text-brand-cyan'>+{summary.avgSpeedBonusPct}% speed bonus</p>
+					</div>
+					<div className='flex flex-col items-center rounded-2xl bg-[#1A1A2E] px-4 py-5 text-center ring-1 ring-white/6'>
+						<Flame className='mb-2 size-6 text-[#FF6B35]' aria-hidden />
+						<p className='text-[10px] font-bold uppercase tracking-[0.15em] text-white/45'>Best streak</p>
+						<p className='mt-1 font-heading text-2xl font-bold text-white tabular-nums'>{streak.title}</p>
+						<p className='mt-1 text-xs font-semibold text-[#FF6B35]'>{streak.subtitle}</p>
+					</div>
+				</div>
 			</div>
 
-			<div className='grid grid-cols-2 gap-3'>
-				<div className='flex flex-col items-center rounded-2xl bg-[#1A1A2E] px-4 py-5 text-center ring-1 ring-white/[0.06]'>
-					<Zap className='mb-2 size-6 text-brand-cyan' aria-hidden />
-					<p className='text-[10px] font-bold uppercase tracking-[0.15em] text-white/45'>Average speed</p>
-					<p className='mt-1 font-heading text-2xl font-bold text-white tabular-nums'>
-						{summary.avgSpeedSec.toFixed(1)}s
-					</p>
-					<p className='mt-1 text-xs font-semibold text-brand-cyan'>+{summary.avgSpeedBonusPct}% speed bonus</p>
-				</div>
-				<div className='flex flex-col items-center rounded-2xl bg-[#1A1A2E] px-4 py-5 text-center ring-1 ring-white/[0.06]'>
-					<Flame className='mb-2 size-6 text-[#FF6B35]' aria-hidden />
-					<p className='text-[10px] font-bold uppercase tracking-[0.15em] text-white/45'>Current streak</p>
-					<p className='mt-1 font-heading text-2xl font-bold text-white tabular-nums'>{streak.title}</p>
-					<p className='mt-1 text-xs font-semibold text-[#FF6B35]'>{streak.subtitle}</p>
-				</div>
-			</div>
-
-			<div className='rounded-2xl bg-[#1A1A2E] p-5 ring-1 ring-white/[0.06]'>
+			{/* ── Performance flow chart — full width ── */}
+			<div className='rounded-2xl bg-[#1A1A2E] p-5 ring-1 ring-white/6'>
 				<div className='mb-4 flex flex-wrap items-center justify-between gap-2'>
 					<p className='font-heading text-sm font-bold text-white'>Performance flow</p>
 					<div className='flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-wide text-white/50'>
@@ -154,7 +169,7 @@ const ResultsScreen = ({ stats, maxStreakThisRun, onPlayAgain }: ResultsScreenPr
 					</div>
 				</div>
 				<div
-					className='flex h-[140px] justify-between gap-1.5 sm:gap-2'
+					className='flex h-35 justify-between gap-1.5 sm:gap-2'
 					role='img'
 					aria-label='Per-question points and response time'
 				>
@@ -172,7 +187,7 @@ const ResultsScreen = ({ stats, maxStreakThisRun, onPlayAgain }: ResultsScreenPr
 									key={`${i}-${s.elapsedMs}`}
 									className='flex min-h-0 min-w-0 flex-1 flex-col items-stretch justify-end'
 								>
-									<div className='mx-auto flex h-[120px] w-full max-w-9 items-end justify-center gap-1'>
+									<div className='mx-auto flex h-30 w-full max-w-9 items-end justify-center gap-1'>
 										<div
 											className={cn('w-[42%] max-w-3 shrink-0 rounded-t-sm bg-brand-cyan', !s.correct && 'opacity-30')}
 											style={{ height: barTimePx }}
@@ -191,6 +206,7 @@ const ResultsScreen = ({ stats, maxStreakThisRun, onPlayAgain }: ResultsScreenPr
 				</div>
 			</div>
 
+			{/* ── Action buttons — full width ── */}
 			<div className='flex flex-col gap-3 pt-2'>
 				<button
 					type='button'
