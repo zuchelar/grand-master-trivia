@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import useLocalStorage from '@/hooks/useLocalStorage';
 import useOpenTriviaQuestions from '@/hooks/useOpenTrivia/useOpenTriviaQuestions';
 import { playCorrectChime } from '@/lib/feedbackSounds';
+import { generateLobbyHandle } from '@/lib/leaderboardHandles';
 import {
 	decodeOpenTriviaText,
 	type OpenTriviaAnswerLetter,
@@ -18,8 +20,15 @@ import {
 	QUIZ_QUESTION_COUNT,
 	QUIZ_SECONDS_PER_QUESTION,
 } from '@/types/game';
+import type { LeaderboardAttempt } from '@/types/leaderboard';
 import type { OpenTriviaCategory, OpenTriviaDifficulty } from '@/types/open-trivia';
 import type { QuizQuestionStat } from '@/types/quiz-session';
+
+const HOF_LEADERBOARD_STORAGE_KEY = 'grand-master-trivia-hof-v1';
+
+function buildRunSignature(stats: QuizQuestionStat[]): string {
+	return stats.map((s) => `${s.correct ? '1' : '0'}:${s.points}:${s.elapsedMs}`).join('|');
+}
 
 function clearStoredTimeout(ref: { current: ReturnType<typeof setTimeout> | null }) {
 	if (ref.current !== null) {
@@ -39,6 +48,11 @@ function App() {
 	const [wrongHighlightLetter, setWrongHighlightLetter] = useState<OpenTriviaAnswerLetter | null>(null);
 	const [roundStats, setRoundStats] = useState<QuizQuestionStat[]>([]);
 	const [maxStreakThisRun, setMaxStreakThisRun] = useState(0);
+
+	const [leaderboardAttempts, setLeaderboardAttempts] = useLocalStorage<LeaderboardAttempt[]>(
+		HOF_LEADERBOARD_STORAGE_KEY,
+		[],
+	);
 
 	const resolvingRef = useRef(false);
 	const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -84,6 +98,43 @@ function App() {
 	);
 
 	const questionText = currentQuestion ? decodeOpenTriviaText(currentQuestion.question) : '';
+
+	const resultsRecordedRef = useRef(false);
+
+	useEffect(() => {
+		if (gameStage !== GAME_STAGES.RESULTS_SCREEN) {
+			resultsRecordedRef.current = false;
+			return;
+		}
+		if (roundStats.length === 0 || resultsRecordedRef.current) {
+			return;
+		}
+		resultsRecordedRef.current = true;
+
+		const totalScore = roundStats.reduce((acc, s) => acc + s.points, 0);
+		const correct = roundStats.filter((s) => s.correct).length;
+		const accuracyPct = Math.round((correct / roundStats.length) * 100);
+		const runSignature = buildRunSignature(roundStats);
+
+		setLeaderboardAttempts((prev) => {
+			const list = prev;
+			if (list.some((p) => p.runSignature === runSignature)) {
+				return list;
+			}
+			const entry: LeaderboardAttempt = {
+				id: crypto.randomUUID(),
+				handle: generateLobbyHandle(),
+				score: totalScore,
+				accuracyPct,
+				streak: maxStreakThisRun,
+				createdAt: Date.now(),
+				runSignature,
+			};
+			const next = [entry, ...list];
+			next.sort((a, b) => b.createdAt - a.createdAt);
+			return next.slice(0, 5);
+		});
+	}, [gameStage, roundStats, maxStreakThisRun, setLeaderboardAttempts]);
 
 	const advanceQuestion = useCallback(
 		(wasCorrect: boolean, elapsedMs: number) => {
@@ -202,6 +253,7 @@ function App() {
 					selectedDifficulty={selectedDifficulty}
 					setSelectedDifficulty={setSelectedDifficulty}
 					onStartQuiz={handleStartQuiz}
+					leaderboardAttempts={leaderboardAttempts}
 				/>
 			)}
 
