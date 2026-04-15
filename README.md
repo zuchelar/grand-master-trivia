@@ -1,3 +1,10 @@
+Name: Austin Zuchelkowski
+Project Option: Trivia
+Live App URL: https://grand-master-trivia.vercel.app/
+Github Repository URL: https://github.com/zuchelar/grand-master-trivia
+
+
+
 # 1. Technical Report & User Manual
 
 ## 1.1 Project Overview
@@ -107,3 +114,21 @@ On an **incorrect** answer or timeout: `answerFeedback` is set to `'incorrect'` 
 - **Step 6 — Review your results.** After all questions are answered the Results Screen displays your total score, performance accuracy with a percentile label, average response speed and speed-bonus percentage, best answer streak, and a per-question bar chart comparing response time to points earned. Your run is automatically saved to the local leaderboard if it ranks in the top 5.
 
 - **Step 7 — Play again or share.** Click **Play Again** to return to the Start Screen (your leaderboard entry will already appear). Click **Share Result** to invoke the native share sheet on supported devices, or copy a score summary to your clipboard on desktop.
+
+
+
+
+2. Technical Challenge: One major hurdle that I need to clear was actually breaking down the project into managable parts in order to decide how to best tackle the project. In addition working out the API was not as big of a challenge but still I still needed some time to work out the specifics of how it worked.
+
+
+
+
+
+3. Demo Video URL: [https://youtu.be/3JZG3ethLHI](https://www.youtube.com/watch?v=3JZG3ethLHI)
+
+
+
+
+
+
+
